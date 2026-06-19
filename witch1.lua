@@ -8,37 +8,28 @@ local function has_value (tab, val)
  return false
 end
 
-function torch_at(x,y)
-	for t in all(torches) do
-		if t.x == x and t.y == y then
-			return true
+function obj_at(self, x, y, o_kind)
+	for o in all(objects) do
+		if o.x == x and o.y == y then
+			if o_kind == 'diff' and o.kind ~= self.kind then
+				return true
+			elseif (o_kind == 'same' and o.kind == self.kind) then
+				return true
+			elseif o.kind == o_kind then
+				return true
+			elseif o_kind == '*' then
+				return true
+			end
 		end
 	end
-	
-	return false
 end
 
-function spawn_torches(n)
-	torches = {}
-	for i = 1, n do
-		local t = {
-			k = 5,
-			x = (flr(rnd(14))+1)*8,
-			y = (flr(rnd(14))+1)*8
-		}
-		if has_value(torches, t) then
-			i -= 1
-		else
-			
-			add(torches, t)
-		end		 
-		
+function clear_obj(obj_kind)
+	for o in all(objects) do
+		if o.kind == obj_kind or (obj_kind == '*' and o.kind != 'witch') then
+			del(objects, o)
+		end
 	end
 end
 
-function draw_torches()
-	for torch in all(torches) do
-		spr(torch.k, torch.x, torch.y)
-	end
-end
 

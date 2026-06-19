@@ -1,106 +1,109 @@
-pico-8 cartridge // http://www.pico-8.com
-version 16
-__lua__
 
-left,right,up,down = 0,1,2,3
-
-next_tile_x = 63
-next_tile_y = 63
-next_tile_sp = mget(63, 63)
-
-witch = {
-	k = 64, --64 --1 --face left
-	flip_x = false,
-	x = 63, 
-	y = 63,
-	dx = 0,
-	dy = 0,
-	w = 2,
-	h = 2,
-	fric = 0.4
-}
+function _init()
+	left,right,up,down = 0,1,2,3
+	
+	objects = {}
+	
+	level = 1
+	
+	--torches = {}
+	
+	--info abt levels
+	waves = {
+		3, 5, 8
+	}
+	
+	local witch = {
+		k = 64, --64 --1 --face left
+		flip_x = false,
+		x = 63, 
+		y = 63,
+		dx = 0,
+		dy = 0,
+		speed = 2, 
+		w = 2,
+		h = 2,
+		kind = 'witch'
+	}
+	
+	add(objects, witch)
+end
 
 function print_status() 
- print('dx:'..witch.dx,15)
- print('dy:'..witch.dy,0,10,15)
- print('x:'..witch.x,0,20,15)
- print('y:'..witch.y,0,30,15)
+ print('dx:'..witch().dx,12)
+ print('dy:'..witch().dy,0,10,12)
+ print('x:'..witch().x,0,20,12)
+ print('y:'..witch().y,0,30,12)
 end
 
-
--- [[ checks if the area after moving sprite
--- positioned at x, y pixels
--- with w width and h height
--- for dx, dy 
--- has colision
--- ]] 
-function is_solid_area(x, y, dx, dy, w, h) 
-	x1 = flr((x + dx) / 8) -- left edge
- x2 = flr((x + dx + w * 8 - 1) / 8) -- right edge
- y1 = flr((y + dy) / 8) -- top edge
- y2 = flr((y + dy + h * 8 - 1) / 8) -- bottom edge
-
- for i=x1, x2 do
-  for j=y1, y2 do
-   if fget(mget(i, j), 0) then
-    return true
-   end
-  end
+function move_witch()
+	--move x
+	if not collide(witch(), witch().dx, 0, 'diff') then
+  witch().x = flr(witch().x+witch().dx)
+	elseif abs(witch().dx) == witch().speed then
+ 	witch().dx /= witch().speed
+ 	move_witch()
  end
- return false
-end
-
-function move_witch() 
- if not is_solid_area(witch.x, witch.y, witch.dx, witch.dy, witch.w, witch.h) then
-  witch.x += witch.dx
-  witch.y += witch.dy
+ 
+	--move y
+ if not collide(witch(), 0,witch().dy, 'diff') then
+   witch().y = flr(witch().y+witch().dy)
+ elseif abs(witch().dy) == witch().speed then
+ 	witch().dy /= witch().speed
+ 	move_witch()
  end
-  witch.dx -= witch.fric*witch.dx
-  witch.dy -= witch.fric*witch.dy
+ 
+ witch().dx = 0
+ witch().dy = 0
 end
 
 function draw_witch() 
- spr(witch.k,witch.x,witch.y,
-  	witch.w, witch.h, witch.flip_x)
-end
-
-function _init()
-	
+ spr(witch().k,witch().x,witch().y,
+  	witch().w, witch().h, witch().flip_x)
 end
 
 function _update()
-  -- player movement
- 
+ -- player movement
 	if (btn(left)) then
-		witch.dx += -0.8
-  witch.flip_x = false
-  witch.k = 64 --64 --1
-	end
-
-  if (btn(right)) then
-   witch.dx += 0.8
-	  witch.flip_x = true
-	  witch.k = 64 --64 --1
-  end
-
-  if (btn(up)) then
-   witch.dy += -0.8
-  	witch.flip_x = false
-  	witch.k = 66 --66 --2
-		end
+		witch().dx = -witch().speed
+  witch().flip_x = false
+  witch().k = 64 --64 --1
+ end
   
-  if (btn(down)) then
-		 witch.dy += 0.8
-  	witch.flip_x = false
-  	witch.k = 68 --68 --3
-		end
+ if (btn(right)) then
+  witch().dx = witch().speed
+  witch().flip_x = true
+  witch().k = 64 --64 --1
+ end
+ 
+ if (btn(up)) then
+  witch().dy = -witch().speed
+ 	witch().flip_x = false
+ 	witch().k = 66 --66 --2
+ end
+ 
+ if (btn(down)) then
+	 witch().dy = witch().speed
+ 	witch().flip_x = false
+ 	witch().k = 68 --68 --3
+ end
+		
+	-- spawn torches
+	if (btnp(❎)) then
+	 spawn_torches(5)
+	end
+	
+	upd_torches()
 end
 
 
 function _draw()
   cls(7)
   map()
-  print_status()
+  --print_status()
+  draw_torches()
   move_witch()
   draw_witch()
+  camera(flr(witch().x/128)*128,
+  							flr(witch().y/128)*128)
 end

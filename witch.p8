@@ -5,20 +5,18 @@ __lua__
 function _init()
 	left,right,up,down = 0,1,2,3
 	
-	actors = {}
+	objects = {}
 	
 	level = 1
 	
-	spawn=false
-	
-	torches = {}
+	--torches = {}
 	
 	--info abt levels
 	waves = {
 		3, 5, 8
 	}
 	
-	witch = {
+	local witch = {
 		k = 64, --64 --1 --face left
 		flip_x = false,
 		x = 63, 
@@ -31,86 +29,74 @@ function _init()
 		kind = 'witch'
 	}
 	
-	add(actors, witch)
+	add(objects, witch)
 end
 
 function print_status() 
- print('dx:'..witch.dx,12)
- print('dy:'..witch.dy,0,10,12)
- print('x:'..witch.x,0,20,12)
- print('y:'..witch.y,0,30,12)
+ print('dx:'..witch().dx,12)
+ print('dy:'..witch().dy,0,10,12)
+ print('x:'..witch().x,0,20,12)
+ print('y:'..witch().y,0,30,12)
 end
 
-
--- [[ checks if the area after moving sprite
--- positioned at x, y pixels
--- with w width and h height
--- for dx, dy 
--- has colision
--- ]] 
-function is_solid_area(x, y, dx, dy, w, h) 
-	x1 = flr((x + dx) / 8) -- left edge
- x2 = flr((x + dx + w * 8 - 1) / 8) -- right edge
- y1 = flr((y + dy) / 8) -- top edge
- y2 = flr((y + dy + h * 8 - 1) / 8) -- bottom edge
-
- for i=x1, x2 do
-  for j=y1, y2 do
-   if fget(mget(i, j), 0) or torch_at(8*i, 8*j) then
-    return true
-   end
-  end
- end
- return false
-end
-
-function move_witch() 
- if not is_solid_area(witch.x, witch.y, witch.dx, witch.dy, witch.w, witch.h) then
-  witch.x = flr(witch.x+witch.dx)
-  witch.y = flr(witch.y+witch.dy)
- elseif abs(witch.dx) == witch.speed then
- 	witch.dx /= witch.speed
- 	move_witch()
- elseif abs(witch.dy) == witch.speed then
- 	witch.dy /= witch.speed
+function move_witch()
+	--move x
+	if not collide(witch(), witch().dx, 0, 'diff') then
+  witch().x = flr(witch().x+witch().dx)
+	elseif abs(witch().dx) == witch().speed then
+ 	witch().dx /= witch().speed
  	move_witch()
  end
  
- witch.dx = 0
- witch.dy = 0
+	--move y
+ if not collide(witch(), 0,witch().dy, 'diff') then
+   witch().y = flr(witch().y+witch().dy)
+ elseif abs(witch().dy) == witch().speed then
+ 	witch().dy /= witch().speed
+ 	move_witch()
+ end
+ 
+ witch().dx = 0
+ witch().dy = 0
 end
 
 function draw_witch() 
- spr(witch.k,witch.x,witch.y,
-  	witch.w, witch.h, witch.flip_x)
+ spr(witch().k,witch().x,witch().y,
+  	witch().w, witch().h, witch().flip_x)
 end
 
 function _update()
  -- player movement
 	if (btn(left)) then
-		witch.dx = -witch.speed
-  witch.flip_x = false
-  witch.k = 64 --64 --1
+		witch().dx = -witch().speed
+  witch().flip_x = false
+  witch().k = 64 --64 --1
+ end
   
- elseif (btn(right)) then
-  witch.dx = witch.speed
-  witch.flip_x = true
-  witch.k = 64 --64 --1
-  
- elseif (btn(up)) then
-  witch.dy = -witch.speed
- 	witch.flip_x = false
- 	witch.k = 66 --66 --2
+ if (btn(right)) then
+  witch().dx = witch().speed
+  witch().flip_x = true
+  witch().k = 64 --64 --1
+ end
  
- elseif (btn(down)) then
-	 witch.dy = witch.speed
- 	witch.flip_x = false
- 	witch.k = 68 --68 --3
+ if (btn(up)) then
+  witch().dy = -witch().speed
+ 	witch().flip_x = false
+ 	witch().k = 66 --66 --2
+ end
+ 
+ if (btn(down)) then
+	 witch().dy = witch().speed
+ 	witch().flip_x = false
+ 	witch().k = 68 --68 --3
+ end
 		
 	-- spawn torches
-	elseif (btnp(❎)) then
+	if (btnp(❎)) then
 	 spawn_torches(5)
 	end
+	
+	upd_torches()
 end
 
 
@@ -121,10 +107,14 @@ function _draw()
   draw_torches()
   move_witch()
   draw_witch()
-  camera(flr(witch.x/128)*128,
-  							flr(witch.y/128)*128)
+  camera(flr(witch().x/128)*128,
+  							flr(witch().y/128)*128)
 end
 -->8
+function witch()
+	return objects[1]
+end
+
 local function has_value (tab, val)
  for index, value in ipairs(tab) do
   if value == val then
@@ -135,40 +125,145 @@ local function has_value (tab, val)
  return false
 end
 
-function torch_at(x,y)
-	for t in all(torches) do
-		if t.x == x and t.y == y then
-			return true
+--[[
+checks for objs occupying pixel x,y;
+compares against  the self object
+--]]
+function obj_at(self, x, y, o_kind)
+	for o in all(objects) do
+		if occupies_spc(o, x, y) then
+			if o_kind == 'diff' and o.kind ~= self.kind then
+				return true
+			elseif o_kind == 'same' and o.kind == self.kind then
+				return true
+			elseif o.kind == o_kind then
+				return true
+			elseif o_kind == '*' then
+				return true
+			end
 		end
 	end
 	
 	return false
 end
 
+function occupies_spc(o, x, y)
+	for i = o.x, (o.x+8*o.w)-1 do
+		for j = o.y, (o.y+8*o.h)-1 do
+			if (i==x and j==y) then
+				return true
+			end  
+		end          
+	end
+	
+	return false
+end
+
+function clear_obj(obj_kind)
+	for o in all(objects) do
+		if o.kind == obj_kind or (obj_kind == '*' and o.kind != 'witch') then
+			del(objects, o)
+		end
+	end
+end
+
+-- [[ checks if the area after moving sprite
+-- positioned at x, y pixels
+-- with w width and h height
+-- for dx, dy 
+-- has colision
+-- ]] 
+function collide(o, dx, dy, col_type) 
+	x1 = flr((o.x + dx) / 8) -- left edge
+ x2 = flr((o.x + dx + o.w * 8 - 1) / 8) -- right edge
+ y1 = flr((o.y + dy) / 8) -- top edge
+ y2 = flr((o.y + dy + o.h * 8 - 1) / 8) -- bottom edge
+
+ for i=x1, x2 do
+  for j=y1, y2 do
+   if fget(mget(i, j), 0) or obj_at(o, 8*i, 8*j, col_type) then
+    return true
+   end
+  end
+ end
+ return false
+end
+
+
+function collide_objonly(o, dx, dy, col_type) 
+	x1 = flr((o.x + dx) / 8) -- left edge
+ x2 = flr((o.x + dx + o.w * 8 - 1) / 8) -- right edge
+ y1 = flr((o.y + dy) / 8) -- top edge
+ y2 = flr((o.y + dy + o.h * 8 - 1) / 8) -- bottom edge
+
+ for i=x1, x2 do
+  for j=y1, y2 do
+   if obj_at(o, 8*i, 8*j, col_type) then
+    return true
+   end
+  end
+ end
+ return false
+end
+
+-->8
+
 function spawn_torches(n)
-	torches = {}
+	--torches = {}
+	clear_obj('torch')
 	for i = 1, n do
 		local t = {
 			k = 5,
 			x = (flr(rnd(14))+1)*8,
-			y = (flr(rnd(14))+1)*8
+			y = (flr(rnd(14))+1)*8,
+			dx = 0,
+			dy = 0,
+			h=1,
+			w=1,
+			kind = 'torch'
 		}
-		if has_value(torches, t) then
+		if collide(t, 0, 0, '*') then
 			i -= 1
 		else
-			
-			add(torches, t)
+			add(objects, t)
 		end		 
 		
 	end
 end
 
-function draw_torches()
-	for torch in all(torches) do
-		spr(torch.k, torch.x, torch.y)
+function upd_torches()
+	if btnp(🅾️) then
+		for o in all(objects) do
+			if o.kind == 'torch' then
+				-- up
+				if witch().k == 66 and collide_objonly(o, 0, 1, 'witch') then
+					o.k = 6
+					
+				--down
+				elseif witch().k == 68 and collide_objonly(o, 0, -1, 'witch') then
+					o.k = 6
+					
+				--left
+				elseif witch().k == 64 and not witch().flip_x and collide_objonly(o, 1, 0, 'witch') then
+					o.k = 6
+					
+				--right
+				elseif witch().k == 64 and witch().flip_x and collide_objonly(o, -1, 0, 'witch') then
+					o.k = 6
+				end
+			end
+		end
 	end
+
 end
 
+function draw_torches()
+	for o in all(objects) do
+		if o.kind == 'torch' then
+			spr(o.k, o.x, o.y)
+		end
+	end
+end
 
 __gfx__
 00000000000030000000300000030000000000000000000000088880000000000000000000000000000000000000000000000000000000000000000000000000
