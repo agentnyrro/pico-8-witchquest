@@ -206,7 +206,8 @@ tab 2 - torch mechanics
 --]]
 function spawn_torches(n)
 	clear_obj('torch')
-	for i = 1, n do
+	local i = 0 --nr of torches spawned
+	while i < n do
 		local t = new_object(5, --spr -- 
 									  flr(rnd(112))+8, flr(rnd(112))+8, -- x, y
 										0, 0, -- dx, dy
@@ -215,12 +216,10 @@ function spawn_torches(n)
 										'torch', --kind
 										upd_torch, draw_obj) 
 		
-		if collide_walls(t, 0, 0) or collide_objects(t, 0, 0, '*') then
-			i -= 1
-		else
+		if not collide_walls(t, 0, 0) and not collide_objects(t, 0, 0, '*') then
 			add(objects, t)
+			i += 1
 		end		 
-		
 	end
 end
 
