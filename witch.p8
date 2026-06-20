@@ -208,7 +208,7 @@ function spawn_torches(n)
 	clear_obj('torch')
 	for i = 1, n do
 		local t = new_object(5, --spr -- 
-										(flr(rnd(14))+1)*8, (flr(rnd(14))+1)*8, -- x, y
+									  flr(rnd(112))+8, flr(rnd(112))+8, -- x, y
 										0, 0, -- dx, dy
 										0, -- speed
 										1, 1, -- width, height
