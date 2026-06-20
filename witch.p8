@@ -24,6 +24,10 @@ function _init()
 										'witch', --kind
 										upd_witch, draw_witch) 
 	witch.flip_x = false
+ witch.hitbox.l += 2
+ witch.hitbox.r -= 2
+ witch.hitbox.t += 3
+ witch.lay_draw = 1 --above everything else
 	add(objects, witch) 
 end
 
@@ -48,16 +52,19 @@ end
 
 function _draw()
   map()
-  --print_status()
-  for o in all(objects) do
-			o:draw_fun(o)
-		end
-  
   rectfill(14, 0, 120, 6, 1)
   rectfill(18, 121, 105, 127, 1)
   
   print('press ❎ to spawn torches!', 16, 1,9)
   print("press z to light 'em!", 20, 122,9)
+  --print_status()
+  for i = 0, 1 do
+   for o in all(objects) do
+    if (o.lay_draw == i) then
+     o:draw_fun(o)
+    end
+   end
+  end
   camera(flr(witch.x/128)*128,
   							flr(witch.y/128)*128)
 end
@@ -78,7 +85,9 @@ function new_object(k, x, y, dx, dy, speed, w, h, kind, upd_fun, draw_fun)
 		h = h,
 		kind = kind,
 		upd_fun = upd_fun,
-		draw_fun = draw_fun
+		draw_fun = draw_fun,
+		lay_draw = 0, --layer of drawing
+		hitbox = {l=x, r=x+8*w-1, t=y, b=y+8*h-1} --default is whole sprite
 	}
 
 	return o
@@ -103,6 +112,7 @@ end
 checks for objs occupying pixel x,y;
 compares against  the self object for possible collisions
 --]]
+--[[
 function obj_at(self, x, y, o_kind)
 	for o in all(objects) do
 		if o ~= self and occupies_spc(o, x, y) then
@@ -120,9 +130,10 @@ function obj_at(self, x, y, o_kind)
 	
 	return false
 end
+--]]
 
 --checks if object o occupies pixel x,y
-function occupies_spc(o, x, y)
+--[[function occupies_spc(o, x, y)
 	for i = o.x, (o.x+8*o.w)-1 do
 		for j = o.y, (o.y+8*o.h)-1 do
 			if (i==x and j==y) then
@@ -133,13 +144,14 @@ function occupies_spc(o, x, y)
 	
 	return false
 end
+--]]
 
 -- checks if overlap between specified object's sprite and rectangle
 function overlap(o, x1, x2, y1, y2)
- o_l = o.x -- object's left edge
- o_r = o.x+8*o.w-1 -- right edge
- o_t = o.y -- top edge
- o_b = o.y+8*o.h-1 -- bottom edge
+ local o_l = o.hitbox.l -- object's left edge
+ local o_r = o.hitbox.r -- right edge
+ local o_t = o.hitbox.t -- top edge
+ local o_b = o.hitbox.b -- bottom edge
 
  if o_l > x2 or x1 > o_r then
   return false
@@ -165,10 +177,10 @@ end
 -- has colision with walls
 -- ]] 
 function collide_walls(o, dx, dy) 
-	local x1 = flr((o.x + dx) / 8) -- left edge
- local x2 = flr((o.x + dx + o.w * 8 - 1) / 8) -- right edge
- local y1 = flr((o.y + dy) / 8) -- top edge
- local y2 = flr((o.y + dy + o.h * 8 - 1) / 8) -- bottom edge
+	local x1 = flr((o.hitbox.l + dx) / 8) -- left edge
+ local x2 = flr((o.hitbox.r + dx) / 8) -- right edge
+ local y1 = flr((o.hitbox.t + dy) / 8) -- top edge
+ local y2 = flr((o.hitbox.b + dy) / 8) -- bottom edge
 
  for i=x1, x2 do
   for j=y1, y2 do
@@ -187,10 +199,10 @@ end
  has colision with objects
 --]] 
 function collide_objects(o, dx, dy, col_type) 
- local x1 = o.x + dx -- left edge
- local x2 = o.x + dx + o.w * 8 - 1-- right edge
- local y1 = o.y + dy -- top edge
- local y2 = o.y + dy + o.h * 8 - 1 -- bottom edge
+ local x1 = o.hitbox.l + dx -- left edge
+ local x2 = o.hitbox.r + dx -- right edge
+ local y1 = o.hitbox.t + dy -- top edge
+ local y2 = o.hitbox.b + dy -- bottom edge
 
  for o2 in all(objects) do 
   if o2 != o and (o2.kind == col_type or col_type == '*') and (overlap(o2, x1, x2, y1, y2)) then
@@ -215,7 +227,9 @@ function spawn_torches(n)
 										1, 1, -- width, height
 										'torch', --kind
 										upd_torch, draw_obj) 
-		
+		t.hitbox.l +=1
+  t.hitbox.r -= 1
+  t.hitbox.t += 4
 		if not collide_walls(t, 0, 0) and not collide_objects(t, 0, 0, '*') then
 			add(objects, t)
 			i += 1
@@ -228,18 +242,41 @@ function upd_torch(t)
 		-- up
 		if witch.k == 66 and collide_objects(t, 0, 1, 'witch') then
 			t.k = 6
-			
+			t.hitbox.t = t.y
+   if collide_objects(t, 0, 0, 'witch') then
+    -- teleport witch below
+    witch.y = t.y + t.h*8
+    recalc_w_hitbox()
+   end 
+
 		--down
 		elseif witch.k == 68 and collide_objects(t, 0, -1, 'witch') then
 			t.k = 6
-			
+			t.hitbox.t = t.y
+   if collide_objects(t, 0, 0, 'witch') then
+    -- teleport witch above
+    witch.y = t.y - witch.h*8
+    recalc_w_hitbox()
+   end 
+
 		--left
 		elseif witch.k == 64 and not witch.flip_x and collide_objects(t, 1, 0, 'witch') then
 			t.k = 6
-			
+			t.hitbox.t = t.y
+   if collide_objects(t, 0, 0, 'witch') then
+    -- teleport witch right
+    witch.x = t.y + t.w*8
+    recalc_w_hitbox()
+   end 
 		--right
 		elseif witch.k == 64 and witch.flip_x and collide_objects(t, -1, 0, 'witch') then
 			t.k = 6
+   t.hitbox.t = t.y
+   if collide_objects(t, 0, 0, 'witch') then
+    -- teleport witch left
+    witch.x = t.x - witch.w*8
+    recalc_w_hitbox()
+   end 
 		end
 	end
 end
@@ -250,7 +287,9 @@ tab 3 - witch code
 function move_witch(w)
 	--move x
 	if not collide_walls(w, w.dx, 0) and not collide_objects(w, w.dx, 0, 'torch') then
-  w.x = flr(w.x+w.dx)
+  w.x += w.dx
+  w.hitbox.l += w.dx
+  w.hitbox.r += w.dx
 	elseif abs(w.dx) == w.speed then
  	w.dx /= w.speed
  	move_witch(w)
@@ -258,7 +297,9 @@ function move_witch(w)
  
 	--move y
  if not collide_walls(w, 0, w.dy) and not collide_objects(w, 0, w.dy, 'torch')then
-   w.y = flr(w.y+w.dy)
+   w.y += w.dy
+   w.hitbox.t += w.dy
+   w.hitbox.b += w.dy
  elseif abs(w.dy) == w.speed then
  	w.dy /= w.speed
  	move_witch(w)
@@ -273,6 +314,13 @@ function draw_witch(w)
   	w.w, w.h, w.flip_x)
 end
 
+
+function recalc_w_hitbox()
+ witch.hitbox.l = witch.x + 2
+ witch.hitbox.r = witch.x + 8*witch.w - 1 -2
+ witch.hitbox.t = witch.y + 3
+ witch.hitbox.b = witch.y + 8*witch.h - 1
+end
 
 -- player movement
 function upd_witch(w)
