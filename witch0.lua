@@ -104,6 +104,12 @@ function _draw()
   draw_torches()
   move_witch()
   draw_witch()
+
+  rectfill(14, 0, 120, 6, 1)
+  rectfill(18, 121, 105, 127, 1)
+  
+  print('press ❎ to spawn torches!', 16, 1,9)
+  print("press z to light 'em!", 20, 122,9)
   camera(flr(witch().x/128)*128,
   							flr(witch().y/128)*128)
 end
