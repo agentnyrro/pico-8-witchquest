@@ -9,12 +9,8 @@ function _init()
 	
 	objects = {}
 	
-	level = 1
-	
-	--info abt levels
-	waves = {
-		3, 5, 8
-	}
+	score = 0
+	game_active=false
 	
 	witch = new_object(64, --spr -- face left
 										63, 63, -- x, y
@@ -32,6 +28,7 @@ function _init()
 	add(objects, witch) 
 end
 
+-- debug func
 function print_status() 
  print('dx:'..witch.dx,12)
  print('dy:'..witch.dy,0,10,12)
@@ -44,20 +41,45 @@ function _update()
 		o:upd_fun(o)
 	end
 
-	-- spawn torches
-	if (btnp(❎)) then
-	 spawn_torches(5)
+	-- game start/restart
+	if btnp(❎) then
+		game_active = not game_active
+		if game_active then
+			spawn_torches(5)
+		else
+			score = 0
+			spawn_torches(0)
+		end
+	end
+
+	if game_active then
+		local all_torches_lit = true
+		for o in all(objects) do
+			if o.kind == 'torch' and o.k == 5 then
+				all_torches_lit = false
+				break
+			end
+		end
+
+		if all_torches_lit then
+			spawn_torches(5)
+		end
 	end
 end
 
 
 function _draw()
   map()
-  rectfill(14, 0, 120, 6, 1)
-  rectfill(18, 121, 105, 127, 1)
-  
-  print('press ❎ to spawn torches!', 16, 1,9)
-  print("press z to light 'em!", 20, 122,9)
+		
+		rectfill(14, 0, 127-14, 6, 1)
+		if not game_active then
+			print('press ❎ to start game!', 19, 1,9)
+		else
+			print('press ❎ to restart!', 25, 1,9)
+  end
+
+		rectfill(10, 121, 117, 127, 1)
+  print("press z to light torches!", 15, 122,9)
   --print_status()
   for i = 0, 1 do
    for o in all(objects) do
@@ -66,6 +88,8 @@ function _draw()
     end
    end
   end
+  
+  print(("score: ")..score, 9, 9, 9)
   camera(flr(witch.x/128)*128,
   							flr(witch.y/128)*128)
 end
@@ -222,7 +246,7 @@ function spawn_torches(n)
 	local i = 0 --nr of torches spawned
 	while i < n do
 		local t = new_object(5, --spr -- 
-									  flr(rnd(112))+8, flr(rnd(112))+8, -- x, y
+									  flr(rnd(112))+8, flr(rnd(112))+12, -- x, y
 										0, 0, -- dx, dy
 										0, -- speed
 										1, 1, -- width, height
@@ -240,29 +264,31 @@ end
 
 function upd_torch(t)
 	if btnp(🅾️) then
+		local torch_just_lit = false
 		-- up
 		if witch.k == 66 and collide_objects(t, 0, 1, 'witch') then
-			t.k = 6
-			t.hitbox.t = t.y
+			torch_just_lit = true
 
 		--down
 		elseif witch.k == 68 and collide_objects(t, 0, -1, 'witch') then
-			t.k = 6
-			t.hitbox.t = t.y
+			torch_just_lit = true
    -- teleport witch above
    witch.y = t.y - witch.h*8
-   recalc_w_hitbox()
-   end 
+   recalc_w_hitbox() 
 
 		--left
 		elseif witch.k == 64 and not witch.flip_x and collide_objects(t, 1, 0, 'witch') then
-			t.k = 6
-			t.hitbox.t = t.y
+			torch_just_lit = true
    
 		--right
 		elseif witch.k == 64 and witch.flip_x and collide_objects(t, -1, 0, 'witch') then
+			torch_just_lit = true
+		end
+
+		if torch_just_lit then
 			t.k = 6
    t.hitbox.t = t.y 
+			score += 100
 		end
 	end
 end
@@ -312,12 +338,12 @@ end
 function upd_witch(w)
 	-- if detected unexpected collision
 	if collide_objects(w, 0, 0, '*') or collide_walls(w, 0, 0) then
-		-- make hitbox tiny
 		w.noclip = true
 	elseif w.noclip then
 		w.noclip = false
 	end
-
+	
+	
 	if (btn(left)) then
 		w.dx = -w.speed
   w.flip_x = false
@@ -341,7 +367,7 @@ function upd_witch(w)
  	w.flip_x = false
  	w.k = 68 --68 --3
  end
-
+ 
  move_witch(w)
 end
 __gfx__
