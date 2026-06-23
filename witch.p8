@@ -28,6 +28,7 @@ function _init()
  witch.hitbox.r -= 2
  witch.hitbox.t += 3
  witch.lay_draw = 1 --above everything else
+	witch.noclip = false -- used for handling unexpected collisions e.g. after teleport
 	add(objects, witch) 
 end
 
@@ -243,40 +244,25 @@ function upd_torch(t)
 		if witch.k == 66 and collide_objects(t, 0, 1, 'witch') then
 			t.k = 6
 			t.hitbox.t = t.y
-   if collide_objects(t, 0, 0, 'witch') then
-    -- teleport witch below
-    witch.y = t.y + t.h*8
-    recalc_w_hitbox()
-   end 
 
 		--down
 		elseif witch.k == 68 and collide_objects(t, 0, -1, 'witch') then
 			t.k = 6
 			t.hitbox.t = t.y
-   if collide_objects(t, 0, 0, 'witch') then
-    -- teleport witch above
-    witch.y = t.y - witch.h*8
-    recalc_w_hitbox()
+   -- teleport witch above
+   witch.y = t.y - witch.h*8
+   recalc_w_hitbox()
    end 
 
 		--left
 		elseif witch.k == 64 and not witch.flip_x and collide_objects(t, 1, 0, 'witch') then
 			t.k = 6
 			t.hitbox.t = t.y
-   if collide_objects(t, 0, 0, 'witch') then
-    -- teleport witch right
-    witch.x = t.y + t.w*8
-    recalc_w_hitbox()
-   end 
+   
 		--right
 		elseif witch.k == 64 and witch.flip_x and collide_objects(t, -1, 0, 'witch') then
 			t.k = 6
-   t.hitbox.t = t.y
-   if collide_objects(t, 0, 0, 'witch') then
-    -- teleport witch left
-    witch.x = t.x - witch.w*8
-    recalc_w_hitbox()
-   end 
+   t.hitbox.t = t.y 
 		end
 	end
 end
@@ -286,7 +272,7 @@ tab 3 - witch code
 --]]
 function move_witch(w)
 	--move x
-	if not collide_walls(w, w.dx, 0) and not collide_objects(w, w.dx, 0, 'torch') then
+	if w.noclip or (not collide_walls(w, w.dx, 0) and not collide_objects(w, w.dx, 0, 'torch'))  then
   w.x += w.dx
   w.hitbox.l += w.dx
   w.hitbox.r += w.dx
@@ -296,7 +282,7 @@ function move_witch(w)
  end
  
 	--move y
- if not collide_walls(w, 0, w.dy) and not collide_objects(w, 0, w.dy, 'torch')then
+ if w.noclip or (not collide_walls(w, 0, w.dy) and not collide_objects(w, 0, w.dy, 'torch')) then
    w.y += w.dy
    w.hitbox.t += w.dy
    w.hitbox.b += w.dy
@@ -324,6 +310,14 @@ end
 
 -- player movement
 function upd_witch(w)
+	-- if detected unexpected collision
+	if collide_objects(w, 0, 0, '*') or collide_walls(w, 0, 0) then
+		-- make hitbox tiny
+		w.noclip = true
+	elseif w.noclip then
+		w.noclip = false
+	end
+
 	if (btn(left)) then
 		w.dx = -w.speed
   w.flip_x = false
@@ -347,7 +341,7 @@ function upd_witch(w)
  	w.flip_x = false
  	w.k = 68 --68 --3
  end
- 
+
  move_witch(w)
 end
 __gfx__
