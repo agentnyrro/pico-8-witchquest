@@ -50,11 +50,13 @@ function _update()
 	if btnp(❎) then
 		game_active = not game_active
 		if game_active then
+
 			if game_over then
 	   game_over = false
 	   score = 0
   	end
-  	
+   
+  	tics_round_time = 30*20
    round = 1
 			spawn_torches(5)
 		else
