@@ -11,9 +11,14 @@ function _init()
 	
 	score = 0
 	game_active=false
-	
+ game_over = false
+
+ tics_tr = -1 --used for timing round transitions
+	tics_round_time = 30*20 --round time; starts at 20s	
+ round = 0
+
 	witch = new_object(64, --spr -- face left
-										63, 63, -- x, y
+										55, 55, -- x, y
 										0, 0, -- dx, dy
 										2, -- speed
 										2, 2, -- width, height
@@ -45,10 +50,11 @@ function _update()
 	if btnp(❎) then
 		game_active = not game_active
 		if game_active then
+   game_over = false
+   round = 1
 			spawn_torches(5)
 		else
-			score = 0
-			spawn_torches(0)
+			_init()
 		end
 	end
 
@@ -62,8 +68,24 @@ function _update()
 		end
 
 		if all_torches_lit then
-			spawn_torches(5)
+   if tics_tr == -1 then
+    tics_tr = 5 -- transition should take 5 frames
+   elseif tics_tr > 0 then 
+    tics_tr -= 1
+   else
+    spawn_torches(5)
+    tics_tr = -1
+    tics_round_time = 30*max(20-round, 5)
+    round += 1
+   end
 		end
+
+  tics_round_time -= 1
+  if tics_round_time == 0 then
+   game_over = true
+   game_active = false
+   clear_obj('torch')
+  end
 	end
 end
 
@@ -89,7 +111,13 @@ function _draw()
    end
   end
   
-  print(("score: ")..score, 9, 9, 9)
+  print("score: "..score, 9, 9, 9)
+		print(flr(tics_round_time/30), 110, 9, 8)
+  if game_over then
+   rectfill(10, 50, 117, 77, 1)
+   print("game over", 46, 60, 9)
+  end
+
   camera(flr(witch.x/128)*128,
   							flr(witch.y/128)*128)
 end
