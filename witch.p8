@@ -50,7 +50,11 @@ function _update()
 	if btnp(❎) then
 		game_active = not game_active
 		if game_active then
-   game_over = false
+			if game_over then
+	   game_over = false
+	   score = 0
+  	end
+  	
    round = 1
 			spawn_torches(5)
 		else
@@ -88,6 +92,7 @@ function _update()
   end
 	end
 end
+
 
 
 function _draw()
