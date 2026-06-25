@@ -50,12 +50,11 @@ function _update()
 	if btnp(❎) then
 		game_active = not game_active
 		if game_active then
-
 			if game_over then
 	   game_over = false
 	   score = 0
   	end
-   
+  	
   	tics_round_time = 30*20
    round = 1
 			spawn_torches(5)
@@ -96,7 +95,6 @@ function _update()
 end
 
 
-
 function _draw()
   map()
 		
@@ -121,8 +119,8 @@ function _draw()
   print("score: "..score, 9, 9, 9)
 		print(flr(tics_round_time/30), 110, 9, 8)
   if game_over then
-   rectfill(10, 50, 117, 77, 1)
-   print("game over", 46, 60, 9)
+   rectfill(10, 55, 117, 72, 1)
+   print("game over!", 47, 61, 9)
   end
 
   camera(flr(witch.x/128)*128,
