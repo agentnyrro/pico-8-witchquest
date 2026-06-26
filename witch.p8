@@ -120,8 +120,10 @@ function _draw()
   print("score: "..score, 9, 9, 9)
 		print(flr(tics_round_time/30), 110, 9, 8)
   if game_over then
-   rectfill(10, 55, 117, 72, 1)
-   print("game over!", 47, 61, 9)
+   rectfill(10, 55, 117, 77, 1)
+   rect(11, 56, 116, 76, 9)
+   print("game over!", 47, 60, 9)
+  	print("final score: "..score, 40, 68, 9)
   end
 
   camera(flr(witch.x/128)*128,
@@ -297,7 +299,7 @@ function spawn_torches(n)
 end
 
 function upd_torch(t)
-	if btnp(🅾️) then
+	if btnp(🅾️) and t.k == 5 then
 		local torch_just_lit = false
 		-- up
 		if witch.k == 66 and collide_objects(t, 0, 1, 'witch') then
